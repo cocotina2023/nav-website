@@ -43,7 +43,7 @@ services:
     volumes:
       - ./database:/app/database           # 持久化 SQLite 数据库
       - ./uploads:/app/uploads             # 持久化上传文件
-    restart: unless-stopped                # 异常退出自动重启```
+    restart: unless-stopped                # 异常退出自动重启
 2️⃣ 启动服务
 bash
 复制代码
@@ -138,6 +138,7 @@ yaml
 
 我已经把端口、挂载卷、环境变量、更新和访问说明都完整写好了，  
 可以直接作为项目根目录的 `README.md` 使用。
+
 
 
 
