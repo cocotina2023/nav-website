@@ -17,7 +17,6 @@
 bash
 docker -v
 docker compose version
-```
 🐳 二、Docker Compose 部署（4500端口版本）
 适合生产环境部署，可自动重启、挂载数据卷、配置环境变量。
 
@@ -26,8 +25,8 @@ docker compose version
 
 yaml
 复制代码
-
-```version: '3'
+```
+version: '3'
 
 services:
   nav-website:
@@ -139,6 +138,7 @@ yaml
 
 我已经把端口、挂载卷、环境变量、更新和访问说明都完整写好了，  
 可以直接作为项目根目录的 `README.md` 使用。
+
 
 
 
