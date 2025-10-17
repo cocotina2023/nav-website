@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  nav-website:
+    image: cocotina2023/nav-website        # ✅ 使用你的镜像
+    container_name: nav-website
+    ports:
+      - "3000:3000"                        # 映射端口：主机3000 -> 容器3000
+    environment:
+      - NODE_ENV=production                # 环境变量：生产模式
+      - PORT=3000                          # 容器监听端口
+      - ADMIN_USERNAME=admin               # 默认管理员用户名
+      - ADMIN_PASSWORD=123456              # 默认管理员密码
+    volumes:
+      - ./database:/app/database           # 持久化 SQLite 数据库
+      - ./uploads:/app/uploads             # 持久化上传文件（图片、图标等）
+    restart: unless-stopped                # 异常退出自动重启
