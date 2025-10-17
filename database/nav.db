@@ -1,0 +1,33 @@
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT UNIQUE,
+  password TEXT
+);
+
+CREATE TABLE menus (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT,
+  icon TEXT,
+  order_index INTEGER
+);
+
+CREATE TABLE cards (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT,
+  url TEXT,
+  icon TEXT,
+  menu_id INTEGER
+);
+
+CREATE TABLE ads (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  image TEXT,
+  link TEXT
+);
+
+CREATE TABLE friends (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT,
+  url TEXT,
+  logo TEXT
+);
