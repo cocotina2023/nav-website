@@ -2,6 +2,7 @@
 // routes/ad.js
 import express from 'express';
 import { db } from '../db.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ router.get('/', (req, res) => {
 });
 
 // 添加广告
-router.post('/', (req, res) => {
+router.post('/', authMiddleware, (req, res) => {
   const { image, link } = req.body;
   db.run('INSERT INTO ads (image, link) VALUES (?, ?)', [image, link], function (err) {
     if (err) return res.status(400).json({ error: err.message });
@@ -23,7 +24,7 @@ router.post('/', (req, res) => {
 });
 
 // 更新广告
-router.put('/:id', (req, res) => {
+router.put('/:id', authMiddleware, (req, res) => {
   const { image, link } = req.body;
   db.run('UPDATE ads SET image=?, link=? WHERE id=?', [image, link, req.params.id], function (err) {
     if (err) return res.status(400).json({ error: err.message });
@@ -32,7 +33,7 @@ router.put('/:id', (req, res) => {
 });
 
 // 删除广告
-router.delete('/:id', (req, res) => {
+router.delete('/:id', authMiddleware, (req, res) => {
   db.run('DELETE FROM ads WHERE id=?', [req.params.id], function (err) {
     if (err) return res.status(400).json({ error: err.message });
     res.json({ message: '广告删除成功' });

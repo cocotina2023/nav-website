@@ -23,6 +23,11 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // 静态文件 (比如上传目录)
 app.use('/uploads', express.static('uploads'));
 
+// 前端静态文件（生产环境）
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static('web/dist'));
+}
+
 // 路由注册
 app.use('/api/auth', authRoutes);
 app.use('/api/menu', menuRoutes);
@@ -34,6 +39,19 @@ app.use('/api/user', userRoutes);
 // 测试接口
 app.get('/', (req, res) => {
   res.json({ message: 'Nav Website Backend API Running 🚀' });
+});
+
+// 404 处理
+app.use((req, res) => {
+  res.status(404).json({ error: '接口不存在' });
+});
+
+// 全局错误处理
+app.use((err, req, res, next) => {
+  console.error('错误:', err);
+  res.status(err.status || 500).json({ 
+    error: err.message || '服务器内部错误' 
+  });
 });
 
 // 启动服务
