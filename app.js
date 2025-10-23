@@ -3,7 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { PORT } from './config.js';
-import { db } from './db.js';
+import { dbReady, getAsync, dbPath } from './db.js';
+import { createHttpError } from './utils/httpError.js';
 
 // 路由导入
 import authRoutes from './routes/auth.js';
@@ -46,15 +47,45 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // 路由注册
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-  });
+app.get('/api/health', async (req, res, next) => {
+  try {
+    await dbReady;
+    const tableNames = ['menus', 'cards', 'ads', 'friends', 'users'];
+    const tables = {};
+
+    for (const name of tableNames) {
+      try {
+        const row = await getAsync(`SELECT COUNT(*) AS count FROM ${name}`);
+        tables[name] = row?.count ?? 0;
+      } catch (error) {
+        tables[name] = null;
+        throw error;
+      }
+    }
+
+    res.json({
+      status: 'ok',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      database: {
+        status: 'connected',
+        path: dbPath,
+        tables,
+      },
+    });
+  } catch (error) {
+    next(
+      createHttpError(500, '服务不可用', {
+        code: 'HEALTH_CHECK_FAILED',
+        cause: error,
+      })
+    );
+  }
 });
+
 app.use('/api/auth', authRoutes);
 app.use('/api/menu', menuRoutes);
+app.use('/api/menus', menuRoutes);
 app.use('/api/card', cardRoutes);
 app.use('/api/ad', adRoutes);
 app.use('/api/friend', friendRoutes);
@@ -68,22 +99,51 @@ app.get('/', (req, res) => {
 // 404 处理
 app.use((req, res) => {
   console.warn(`[404] ${req.method} ${req.originalUrl}`);
-  res.status(404).json({ error: '接口不存在' });
+  res.status(404).json({
+    error: '接口不存在',
+    code: 'NOT_FOUND',
+    timestamp: new Date().toISOString(),
+    path: req.originalUrl,
+  });
 });
 
 // 全局错误处理
 app.use((err, req, res, next) => {
   const status = err.status || 500;
-  console.error(
-    `[${status}] ${req.method} ${req.originalUrl}`,
-    err.stack || err.message || err
-  );
-  res.status(status).json({
-    error: err.message || '服务器内部错误',
-  });
+  const code = err.code || 'INTERNAL_SERVER_ERROR';
+  const message = err.message || '服务器内部错误';
+
+  const response = {
+    error: message,
+    code,
+    timestamp: new Date().toISOString(),
+    path: req.originalUrl,
+  };
+
+  if (err.details) {
+    response.details = err.details;
+  }
+
+  if (process.env.NODE_ENV !== 'production' && err.cause) {
+    response.cause = err.cause.message || String(err.cause);
+  }
+
+  console.error(`[${status}] ${req.method} ${req.originalUrl}`, err.cause || err);
+
+  res.status(status).json(response);
 });
 
 // 启动服务
-app.listen(PORT, () => {
-  console.log(`✅ Server running at http://localhost:${PORT}`);
-});
+const startServer = async () => {
+  try {
+    await dbReady;
+    app.listen(PORT, () => {
+      console.log(`✅ Server running at http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error('❌ 无法启动服务:', error);
+    process.exit(1);
+  }
+};
+
+startServer();

@@ -64,6 +64,15 @@ services:
       start_period: 10s
 ```
 
+> ⚠️ 首次部署前，请确保主机上的 `database/` 与 `uploads/` 目录已存在并具备读写权限，例如：
+>
+> ```bash
+> mkdir -p database uploads
+> chmod -R 775 database uploads
+> ```
+>
+> 应用启动后会自动初始化数据库结构、默认管理员账号以及示例菜单/卡片数据，方便快速验证部署。
+
 2. 一键启动服务：
 
 ```bash
@@ -98,11 +107,22 @@ docker compose logs -f
 {
   "status": "ok",
   "uptime": 123.456,
-  "timestamp": "2024-01-01T12:00:00.000Z"
+  "timestamp": "2024-01-01T12:00:00.000Z",
+  "database": {
+    "status": "connected",
+    "path": "/app/database/nav.db",
+    "tables": {
+      "menus": 3,
+      "cards": 12,
+      "ads": 1,
+      "friends": 2,
+      "users": 1
+    }
+  }
 }
 ```
 
-该接口被 `docker-compose` 的 `healthcheck` 使用，可用于负载均衡或监控探活。
+该接口被 `docker-compose` 的 `healthcheck` 使用，可用于负载均衡或监控探活；`database` 字段展示了数据库文件路径及各业务表的记录数量，便于排查初始化问题。
 
 ---
 
@@ -167,6 +187,7 @@ environment:
 | `ADMIN_USERNAME` | `admin` | 默认创建的管理员用户名。 |
 | `ADMIN_PASSWORD` | `123456` | 默认创建的管理员密码。首次登录后请修改。 |
 | `JWT_SECRET` | `mysecretkey` | JWT 签名密钥，生产环境务必改为复杂随机值。 |
+| `DB_PATH` / `DATABASE_URL` | `./database/nav.db` | 自定义 SQLite 数据库文件路径，支持 `sqlite:///绝对路径/nav.db` 格式。 |
 | `CORS_ORIGIN` | *(未设置)* | 允许的单一来源，设置为 `*` 表示不限制，生产环境建议改为实际域名。 |
 | `CORS_ORIGINS` | *(未设置)* | 允许访问 API 的域名列表，支持多个逗号分隔，同样支持 `*` 表示不限制。 |
 
