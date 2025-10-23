@@ -20,7 +20,19 @@ docker compose version
 
 ---
 
-## 2. 快速启动（Docker Compose）
+## 2. 镜像获取
+
+1. 首次发布后，请在 GitHub Packages 中打开 [ghcr.io/cocotina2023/nav-website](https://github.com/users/cocotina2023/packages/container/package/nav-website)，并在 **Package settings** 中将可见性设置为 **Public**，以便匿名拉取镜像。
+2. 若之前已登录 GHCR，请执行 `docker logout ghcr.io` 确保使用匿名身份。
+3. 拉取最新镜像：
+
+   ```bash
+   docker pull ghcr.io/cocotina2023/nav-website:latest
+   ```
+
+---
+
+## 3. 快速启动（Docker Compose）
 
 1. 在部署目录（例如 `/opt/nav-website/`）创建 `docker-compose.yml`：
 
@@ -38,6 +50,8 @@ services:
       - PORT=4500                          # 容器内部 Node.js 监听端口
       - ADMIN_USERNAME=admin               # 默认管理员账号
       - ADMIN_PASSWORD=123456              # 默认管理员密码
+      - JWT_SECRET=replace-with-strong-secret # JWT 签名密钥
+      - CORS_ORIGIN=*                      # 允许访问 API 的来源
     volumes:
       - ./database:/app/database           # 持久化 SQLite 数据库
       - ./uploads:/app/uploads             # 持久化上传文件
@@ -50,7 +64,7 @@ services:
       start_period: 10s
 ```
 
-2. 启动服务：
+2. 一键启动服务：
 
 ```bash
 docker compose up -d
@@ -76,7 +90,7 @@ docker compose logs -f
 
 ---
 
-## 3. 健康检查接口
+## 4. 健康检查接口
 
 服务提供 `GET /api/health` 用于健康检查，典型响应：
 
@@ -92,9 +106,9 @@ docker compose logs -f
 
 ---
 
-## 4. 生产部署建议
+## 5. 生产部署建议
 
-### 4.1 使用 Nginx 反向代理
+### 5.1 使用 Nginx 反向代理
 
 在主机上安装 Nginx，并创建站点配置（以 `/etc/nginx/conf.d/nav-website.conf` 为例）：
 
@@ -119,7 +133,7 @@ server {
 
 启用配置后运行 `nginx -t && systemctl reload nginx` 使其生效。
 
-### 4.2 启用 HTTPS（推荐）
+### 5.2 启用 HTTPS（推荐）
 
 1. 准备好解析到服务器的域名（如 `nav.example.com`）。
 2. 使用 [Certbot](https://certbot.eff.org/) 或其他 ACME 客户端申请证书：
@@ -130,20 +144,21 @@ server {
 
 3. Certbot 会自动更新 Nginx 配置与证书续期任务。确认 `https://nav.example.com` 可正常访问。
 
-### 4.3 配置 CORS
+### 5.3 配置 CORS
 
-后端默认允许所有来源访问。如需限制来源，可在容器中设置 `CORS_ORIGINS` 环境变量（逗号分隔多个来源）：
+后端默认允许所有来源访问。如需限制来源，可在容器中设置 `CORS_ORIGIN`（单一来源）或 `CORS_ORIGINS`（逗号分隔多个来源）环境变量：
 
 ```yaml
 environment:
-  - CORS_ORIGINS=https://nav.example.com,https://admin.example.com
+  - CORS_ORIGIN=https://nav.example.com            # 单个来源示例
+  # - CORS_ORIGINS=https://nav.example.com,https://admin.example.com  # 多个来源示例
 ```
 
 设置后仅允许指定来源访问 API，其余来源会被拒绝。
 
 ---
 
-## 5. 环境变量说明
+## 6. 环境变量说明
 
 | 变量名 | 默认值 | 说明 |
 | ------ | ------ | ---- |
@@ -152,13 +167,14 @@ environment:
 | `ADMIN_USERNAME` | `admin` | 默认创建的管理员用户名。 |
 | `ADMIN_PASSWORD` | `123456` | 默认创建的管理员密码。首次登录后请修改。 |
 | `JWT_SECRET` | `mysecretkey` | JWT 签名密钥，生产环境务必改为复杂随机值。 |
-| `CORS_ORIGINS` | *(未设置)* | 允许访问 API 的域名列表，支持多个逗号分隔，包含 `*` 表示不限制。 |
+| `CORS_ORIGIN` | *(未设置)* | 允许的单一来源，设置为 `*` 表示不限制，生产环境建议改为实际域名。 |
+| `CORS_ORIGINS` | *(未设置)* | 允许访问 API 的域名列表，支持多个逗号分隔，同样支持 `*` 表示不限制。 |
 
 > 如需自定义数据库存储路径，可修改镜像内 `/app/database` 挂载目录。
 
 ---
 
-## 6. 数据持久化
+## 7. 数据持久化
 
 | 主机目录 | 容器目录 | 说明 |
 | ------- | ------- | ---- |
@@ -169,18 +185,18 @@ environment:
 
 ---
 
-## 7. 常见问题与排查
+## 8. 常见问题与排查
 
 1. **端口被占用**：确保主机 4500 端口空闲，或修改 `docker-compose.yml` 中的端口映射。
-2. **容器健康检查失败**：使用 `docker compose logs nav-website` 查看日志，确认 `/api/health` 是否返回 200。
-3. **Nginx 502 错误**：确认容器正在运行且代理地址与端口配置正确。
-4. **静态资源无法访问**：检查 `uploads` 目录权限以及 Nginx 是否正确代理 `/uploads`。
-5. **跨域请求被拒绝**：为实际访问域名配置 `CORS_ORIGINS`，或确认浏览器请求是否携带正确来源。
+2. **跨域请求被拒绝**：确认前端访问域名已配置在 `CORS_ORIGIN` 或 `CORS_ORIGINS` 中，并重新启动容器。
+3. **数据目录权限不足**：确保部署目录下的 `database/` 与 `uploads/` 对 Docker 进程可写（例如执行 `chmod -R 775 database uploads`），否则会出现初始化失败或静态资源无法保存。
+4. **容器健康检查失败**：使用 `docker compose logs nav-website` 查看日志，确认 `/api/health` 是否返回 200。
+5. **Nginx 502 错误**：确认容器正在运行且代理地址与端口配置正确。
 6. **管理员密码忘记**：删除 `database/nav.db` 后重新启动容器会重新初始化数据库与默认账号（注意会清空数据）。
 
 ---
 
-## 8. 更新 & 维护
+## 9. 更新 & 维护
 
 - 更新镜像：`docker compose pull && docker compose up -d`
 - 查看运行状态：`docker compose ps`

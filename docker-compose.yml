@@ -11,6 +11,8 @@ services:
       - PORT=4500                          # 容器内部 Node.js 监听端口
       - ADMIN_USERNAME=admin               # 默认管理员账号
       - ADMIN_PASSWORD=123456              # 默认管理员密码
+      - JWT_SECRET=replace-with-strong-secret # JWT 签名密钥
+      - CORS_ORIGIN=*                      # 跨域来源，生产环境请设置为实际域名
     volumes:
       - ./database:/app/database           # 持久化 SQLite 数据库
       - ./uploads:/app/uploads             # 持久化上传文件

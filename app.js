@@ -15,8 +15,9 @@ import userRoutes from './routes/user.js';
 
 const app = express();
 
-const allowedOrigins = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+const rawCorsOrigins = process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN ?? null;
+const allowedOrigins = rawCorsOrigins
+  ? rawCorsOrigins.split(',').map((origin) => origin.trim()).filter(Boolean)
   : null;
 
 const corsOptions =
