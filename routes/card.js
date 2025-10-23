@@ -1,6 +1,7 @@
 // routes/card.js
 import express from 'express';
 import { db } from '../db.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -22,8 +23,17 @@ router.get('/', (req, res) => {
 });
 
 // 新增卡片
-router.post('/', (req, res) => {
+router.post('/', authMiddleware, (req, res) => {
   const { title, url, icon, menu_id } = req.body;
+  
+  if (!title || title.trim().length === 0) {
+    return res.status(400).json({ error: '卡片标题不能为空' });
+  }
+  
+  if (!url || url.trim().length === 0) {
+    return res.status(400).json({ error: '卡片链接不能为空' });
+  }
+  
   db.run(
     'INSERT INTO cards (title, url, icon, menu_id) VALUES (?, ?, ?, ?)',
     [title, url, icon, menu_id],
@@ -35,8 +45,17 @@ router.post('/', (req, res) => {
 });
 
 // 更新卡片
-router.put('/:id', (req, res) => {
+router.put('/:id', authMiddleware, (req, res) => {
   const { title, url, icon, menu_id } = req.body;
+  
+  if (!title || title.trim().length === 0) {
+    return res.status(400).json({ error: '卡片标题不能为空' });
+  }
+  
+  if (!url || url.trim().length === 0) {
+    return res.status(400).json({ error: '卡片链接不能为空' });
+  }
+  
   db.run(
     'UPDATE cards SET title=?, url=?, icon=?, menu_id=? WHERE id=?',
     [title, url, icon, menu_id, req.params.id],
@@ -48,7 +67,7 @@ router.put('/:id', (req, res) => {
 });
 
 // 删除卡片
-router.delete('/:id', (req, res) => {
+router.delete('/:id', authMiddleware, (req, res) => {
   db.run('DELETE FROM cards WHERE id=?', [req.params.id], function (err) {
     if (err) return res.status(400).json({ error: err.message });
     res.json({ message: '卡片删除成功' });

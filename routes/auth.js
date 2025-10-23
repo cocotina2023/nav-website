@@ -10,6 +10,19 @@ const router = express.Router();
 // 注册
 router.post('/register', (req, res) => {
   const { username, password } = req.body;
+  
+  if (!username || !password) {
+    return res.status(400).json({ error: '用户名和密码不能为空' });
+  }
+  
+  if (username.length < 3 || username.length > 50) {
+    return res.status(400).json({ error: '用户名长度必须在3-50个字符之间' });
+  }
+  
+  if (password.length < 6) {
+    return res.status(400).json({ error: '密码长度至少为6个字符' });
+  }
+  
   const hashed = bcrypt.hashSync(password, 10);
 
   db.run(
@@ -25,6 +38,10 @@ router.post('/register', (req, res) => {
 // 登录
 router.post('/login', (req, res) => {
   const { username, password } = req.body;
+  
+  if (!username || !password) {
+    return res.status(400).json({ error: '用户名和密码不能为空' });
+  }
 
   db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
     if (err || !user) return res.status(401).json({ error: '用户不存在' });

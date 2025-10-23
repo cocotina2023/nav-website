@@ -1,6 +1,7 @@
 // routes/menu.js
 import express from 'express';
 import { db } from '../db.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -13,8 +14,13 @@ router.get('/', (req, res) => {
 });
 
 // 新建菜单
-router.post('/', (req, res) => {
+router.post('/', authMiddleware, (req, res) => {
   const { name, icon, order_index } = req.body;
+  
+  if (!name || name.trim().length === 0) {
+    return res.status(400).json({ error: '菜单名称不能为空' });
+  }
+  
   db.run(
     'INSERT INTO menus (name, icon, order_index) VALUES (?, ?, ?)',
     [name, icon, order_index || 0],
@@ -26,8 +32,13 @@ router.post('/', (req, res) => {
 });
 
 // 更新菜单
-router.put('/:id', (req, res) => {
+router.put('/:id', authMiddleware, (req, res) => {
   const { name, icon, order_index } = req.body;
+  
+  if (!name || name.trim().length === 0) {
+    return res.status(400).json({ error: '菜单名称不能为空' });
+  }
+  
   db.run(
     'UPDATE menus SET name=?, icon=?, order_index=? WHERE id=?',
     [name, icon, order_index, req.params.id],
@@ -39,7 +50,7 @@ router.put('/:id', (req, res) => {
 });
 
 // 删除菜单
-router.delete('/:id', (req, res) => {
+router.delete('/:id', authMiddleware, (req, res) => {
   db.run('DELETE FROM menus WHERE id=?', [req.params.id], function (err) {
     if (err) return res.status(400).json({ error: err.message });
     res.json({ message: '菜单删除成功' });
