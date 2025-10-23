@@ -15,8 +15,24 @@ import userRoutes from './routes/user.js';
 
 const app = express();
 
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : null;
+
+const corsOptions =
+  allowedOrigins && !allowedOrigins.includes('*')
+    ? { origin: allowedOrigins, credentials: true }
+    : {};
+
+if (allowedOrigins) {
+  console.log(
+    '✅ CORS 已配置允许来源:',
+    allowedOrigins.includes('*') ? '全部来源' : allowedOrigins
+  );
+}
+
 // 中间件
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -29,6 +45,13 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // 路由注册
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/card', cardRoutes);
@@ -43,14 +66,19 @@ app.get('/', (req, res) => {
 
 // 404 处理
 app.use((req, res) => {
+  console.warn(`[404] ${req.method} ${req.originalUrl}`);
   res.status(404).json({ error: '接口不存在' });
 });
 
 // 全局错误处理
 app.use((err, req, res, next) => {
-  console.error('错误:', err);
-  res.status(err.status || 500).json({ 
-    error: err.message || '服务器内部错误' 
+  const status = err.status || 500;
+  console.error(
+    `[${status}] ${req.method} ${req.originalUrl}`,
+    err.stack || err.message || err
+  );
+  res.status(status).json({
+    error: err.message || '服务器内部错误',
   });
 });
 

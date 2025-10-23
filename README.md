@@ -1,36 +1,35 @@
-# 🚀 Nav Website — Docker Compose 部署指南
+# 🚀 Nav Website
 
-一个轻量级导航网站平台，支持后台管理、链接卡片、广告与友链配置。  
-使用 Docker Compose 一键部署，快速运行在任何服务器上。
+一个开箱即用的导航网站平台，提供后台管理、链接卡片、广告与友链配置，适合部署在个人或企业服务器上。该项目基于 Node.js + Express + SQLite，前端使用 Vue3（Vite），通过 RESTful API 进行交互。
 
 ---
 
-## ⚙️ 一、环境要求
+## 1. 环境要求
 
 请确保服务器已安装：
 
 - [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
 
 验证命令：
 
-bash
+```bash
 docker -v
 docker compose version
-🐳 二、Docker Compose 部署（4500端口版本）
-适合生产环境部署，可自动重启、挂载数据卷、配置环境变量。
-
-1️⃣ 创建 docker-compose.yml
-在部署目录（如 /opt/nav-website/）创建：
-
-yaml
-复制代码
 ```
+
+---
+
+## 2. 快速启动（Docker Compose）
+
+1. 在部署目录（例如 `/opt/nav-website/`）创建 `docker-compose.yml`：
+
+```yaml
 version: '3'
 
 services:
   nav-website:
-    image: cocotina2023/nav-website
+    image: ghcr.io/cocotina2023/nav-website:latest
     container_name: nav-website
     ports:
       - "4500:4500"                        # 主机端口:容器端口
@@ -43,106 +42,152 @@ services:
       - ./database:/app/database           # 持久化 SQLite 数据库
       - ./uploads:/app/uploads             # 持久化上传文件
     restart: unless-stopped                # 异常退出自动重启
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4500/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 ```
-2️⃣ 启动服务
-bash
-复制代码
+
+2. 启动服务：
+
+```bash
 docker compose up -d
-Docker 会自动：
+```
 
-拉取镜像 cocotina2023/nav-website
+3. 查看容器状态与日志：
 
-创建挂载目录
-
-后台启动容器
-
-3️⃣ 查看容器状态
-bash
-复制代码
+```bash
 docker compose ps
-示例输出：
+docker compose logs -f
+```
 
-nginx
-复制代码
-NAME           STATUS          PORTS
-nav-website    Up              0.0.0.0:4500->4500/tcp
-4️⃣ 访问网站
-服务	地址
-前端页面	http://localhost:4500
-后端接口	http://localhost:4500/api
+4. 访问服务：
 
-如果是服务器部署，请访问：
+| 类型 | 地址 |
+| ---- | ---- |
+| 前端页面 | http://localhost:4500 |
+| 后端接口 | http://localhost:4500/api |
 
-cpp
-复制代码
-http://<服务器公网IP>:4500
-💾 三、数据持久化
-本地目录	容器目录	说明
-./database	/app/database	SQLite 数据库
-./uploads	/app/uploads	上传图片、图标等文件
+若部署在云服务器，请替换为公网 IP 或域名。
 
-删除容器不会丢失数据。
-
-🔁 四、常用命令
-命令	说明
-docker compose up -d	启动服务（后台）
-docker compose down	停止并删除容器
-docker compose restart	重启服务
-docker compose logs -f	查看日志
-docker compose pull	拉取镜像最新版本
-docker system prune -a	清理无用镜像与缓存
-
-🔧 五、更新项目版本
-bash
-复制代码
-docker compose pull
-docker compose up -d
-数据仍然保留，无需重新初始化。
-
-🧹 六、清理（可选）
-bash
-复制代码
-docker compose down -v
-清理所有容器及挂载卷（如有需要）。
-
-✅ 七、部署完成！
-访问：
-
-arduino
-复制代码
-http://localhost:4500
-或服务器公网 IP：
-
-cpp
-复制代码
-http://<你的服务器IP>:4500
-即可打开导航网站 🎉
-
-📦 项目信息
-镜像名称：cocotina2023/nav-website
-
-默认管理员账号：admin
-
-默认密码：123456
-
-数据库：SQLite（默认存储于 /app/database/nav.db）
-
-❤️ 作者
-cocotina2023
-GitHub：https://github.com/cocotina2023/nav-website
-
-yaml
-复制代码
+> 默认管理员账号：`admin`，默认密码：`123456`。首次登录后请立即修改密码。
 
 ---
 
-我已经把端口、挂载卷、环境变量、更新和访问说明都完整写好了，  
-可以直接作为项目根目录的 `README.md` 使用。
+## 3. 健康检查接口
 
+服务提供 `GET /api/health` 用于健康检查，典型响应：
 
+```json
+{
+  "status": "ok",
+  "uptime": 123.456,
+  "timestamp": "2024-01-01T12:00:00.000Z"
+}
+```
 
+该接口被 `docker-compose` 的 `healthcheck` 使用，可用于负载均衡或监控探活。
 
+---
 
+## 4. 生产部署建议
 
+### 4.1 使用 Nginx 反向代理
 
+在主机上安装 Nginx，并创建站点配置（以 `/etc/nginx/conf.d/nav-website.conf` 为例）：
 
+```nginx
+server {
+    listen 80;
+    server_name nav.example.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:4500;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /api/health {
+        proxy_pass http://127.0.0.1:4500/api/health;
+    }
+}
+```
+
+启用配置后运行 `nginx -t && systemctl reload nginx` 使其生效。
+
+### 4.2 启用 HTTPS（推荐）
+
+1. 准备好解析到服务器的域名（如 `nav.example.com`）。
+2. 使用 [Certbot](https://certbot.eff.org/) 或其他 ACME 客户端申请证书：
+
+   ```bash
+   sudo certbot --nginx -d nav.example.com
+   ```
+
+3. Certbot 会自动更新 Nginx 配置与证书续期任务。确认 `https://nav.example.com` 可正常访问。
+
+### 4.3 配置 CORS
+
+后端默认允许所有来源访问。如需限制来源，可在容器中设置 `CORS_ORIGINS` 环境变量（逗号分隔多个来源）：
+
+```yaml
+environment:
+  - CORS_ORIGINS=https://nav.example.com,https://admin.example.com
+```
+
+设置后仅允许指定来源访问 API，其余来源会被拒绝。
+
+---
+
+## 5. 环境变量说明
+
+| 变量名 | 默认值 | 说明 |
+| ------ | ------ | ---- |
+| `NODE_ENV` | `development` | Node.js 运行模式，生产环境请设置为 `production`。 |
+| `PORT` | `3000` | 后端监听端口，Docker 镜像中默认为 4500。 |
+| `ADMIN_USERNAME` | `admin` | 默认创建的管理员用户名。 |
+| `ADMIN_PASSWORD` | `123456` | 默认创建的管理员密码。首次登录后请修改。 |
+| `JWT_SECRET` | `mysecretkey` | JWT 签名密钥，生产环境务必改为复杂随机值。 |
+| `CORS_ORIGINS` | *(未设置)* | 允许访问 API 的域名列表，支持多个逗号分隔，包含 `*` 表示不限制。 |
+
+> 如需自定义数据库存储路径，可修改镜像内 `/app/database` 挂载目录。
+
+---
+
+## 6. 数据持久化
+
+| 主机目录 | 容器目录 | 说明 |
+| ------- | ------- | ---- |
+| `./database` | `/app/database` | SQLite 数据库文件（`nav.db`）。 |
+| `./uploads` | `/app/uploads` | 上传的图片、图标等资源。 |
+
+删除或更新容器不会影响挂载目录中的数据。
+
+---
+
+## 7. 常见问题与排查
+
+1. **端口被占用**：确保主机 4500 端口空闲，或修改 `docker-compose.yml` 中的端口映射。
+2. **容器健康检查失败**：使用 `docker compose logs nav-website` 查看日志，确认 `/api/health` 是否返回 200。
+3. **Nginx 502 错误**：确认容器正在运行且代理地址与端口配置正确。
+4. **静态资源无法访问**：检查 `uploads` 目录权限以及 Nginx 是否正确代理 `/uploads`。
+5. **跨域请求被拒绝**：为实际访问域名配置 `CORS_ORIGINS`，或确认浏览器请求是否携带正确来源。
+6. **管理员密码忘记**：删除 `database/nav.db` 后重新启动容器会重新初始化数据库与默认账号（注意会清空数据）。
+
+---
+
+## 8. 更新 & 维护
+
+- 更新镜像：`docker compose pull && docker compose up -d`
+- 查看运行状态：`docker compose ps`
+- 查看实时日志：`docker compose logs -f`
+- 停止并移除容器：`docker compose down`
+- 连同数据一起清理：`docker compose down -v`
+
+---
+
+如有问题，欢迎提交 Issue 或 PR。祝部署愉快！
