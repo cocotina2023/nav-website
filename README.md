@@ -50,7 +50,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: nav-website:latest
+    image: ghcr.io/cocotina2023/nav-website:latest
     container_name: nav-website
     ports:
       - "4500:4500"                        # 主机端口:容器端口
