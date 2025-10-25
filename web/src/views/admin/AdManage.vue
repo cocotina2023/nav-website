@@ -31,19 +31,19 @@ const ads = ref([])
 const newAd = ref({ image: '', link: '' })
 
 async function loadAds() {
-  const res = await api.get('/ad')
+  const res = await api.get('/ads')
   ads.value = res.data
 }
 onMounted(loadAds)
 
 async function addAd() {
-  await api.post('/ad', newAd.value)
+  await api.post('/ads', newAd.value)
   newAd.value = { image: '', link: '' }
   loadAds()
 }
 
 async function del(id) {
-  await api.delete(`/ad/${id}`)
+  await api.delete(`/ads/${id}`)
   loadAds()
 }
 </script>

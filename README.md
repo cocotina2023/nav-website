@@ -22,13 +22,19 @@ docker compose version
 
 ## 2. 镜像获取
 
-1. 首次发布后，请在 GitHub Packages 中打开 [ghcr.io/cocotina2023/nav-website](https://github.com/users/cocotina2023/packages/container/package/nav-website)，并在 **Package settings** 中将可见性设置为 **Public**，以便匿名拉取镜像。
-2. 若之前已登录 GHCR，请执行 `docker logout ghcr.io` 确保使用匿名身份。
-3. 拉取最新镜像：
+推荐直接基于当前源码构建镜像，确保前后端产物与配置一致：
 
-   ```bash
-   docker pull ghcr.io/cocotina2023/nav-website:latest
-   ```
+```bash
+docker compose build
+```
+
+构建完成后会得到本地镜像 `nav-website:latest`。如果仍需使用发布在 GHCR 的官方镜像，可执行：
+
+```bash
+docker pull ghcr.io/cocotina2023/nav-website:latest
+```
+
+> 提示：首次拉取 GHCR 镜像前，请确认该仓库已设置为 Public，或使用具备权限的 PAT 登录。
 
 ---
 
@@ -41,17 +47,20 @@ version: '3'
 
 services:
   nav-website:
-    image: ghcr.io/cocotina2023/nav-website:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nav-website:latest
     container_name: nav-website
     ports:
       - "4500:4500"                        # 主机端口:容器端口
     environment:
-      - NODE_ENV=production                # 运行模式
-      - PORT=4500                          # 容器内部 Node.js 监听端口
-      - ADMIN_USERNAME=admin               # 默认管理员账号
-      - ADMIN_PASSWORD=123456              # 默认管理员密码
-      - JWT_SECRET=replace-with-strong-secret # JWT 签名密钥
-      - CORS_ORIGIN=*                      # 允许访问 API 的来源
+      NODE_ENV: production                 # 运行模式
+      PORT: 4500                           # 容器内部 Node.js 监听端口
+      ADMIN_USERNAME: admin                # 默认管理员账号
+      ADMIN_PASSWORD: 123456               # 默认管理员密码
+      JWT_SECRET: replace-with-strong-secret # JWT 签名密钥
+      CORS_ORIGINS: "*"                   # 允许访问 API 的来源
     volumes:
       - ./database:/app/database           # 持久化 SQLite 数据库
       - ./uploads:/app/uploads             # 持久化上传文件
@@ -84,6 +93,8 @@ docker compose logs -f
 | 前端页面 | http://localhost:4500 |
 | 后端接口 | http://localhost:4500/api |
 
+所有前端 SPA 路由（例如 `/mdi-flash`、`/mdi-tools`、`/admin/...`）均可直接访问，并支持浏览器刷新。
+
 若部署在云服务器，请替换为公网 IP 或域名。
 
 > 默认管理员账号：`admin`，默认密码：`123456`。首次登录后请立即修改密码。
@@ -98,11 +109,12 @@ docker compose logs -f
 {
   "status": "ok",
   "uptime": 123.456,
-  "timestamp": "2024-01-01T12:00:00.000Z"
+  "timestamp": "2024-01-01T12:00:00.000Z",
+  "database": "connected"
 }
 ```
 
-该接口被 `docker-compose` 的 `healthcheck` 使用，可用于负载均衡或监控探活。
+当数据库连接异常时，接口会返回 `status: "error"` 与错误信息，可用于监控预警。该接口同时被 `docker-compose` 的 `healthcheck` 使用，可用于负载均衡或监控探活。
 
 ---
 
@@ -150,8 +162,8 @@ server {
 
 ```yaml
 environment:
-  - CORS_ORIGIN=https://nav.example.com            # 单个来源示例
-  # - CORS_ORIGINS=https://nav.example.com,https://admin.example.com  # 多个来源示例
+  CORS_ORIGINS: https://nav.example.com,https://admin.example.com  # 支持多个来源，逗号分隔
+  # CORS_ORIGIN: https://nav.example.com                           # 兼容旧变量名（单来源）
 ```
 
 设置后仅允许指定来源访问 API，其余来源会被拒绝。
@@ -167,8 +179,8 @@ environment:
 | `ADMIN_USERNAME` | `admin` | 默认创建的管理员用户名。 |
 | `ADMIN_PASSWORD` | `123456` | 默认创建的管理员密码。首次登录后请修改。 |
 | `JWT_SECRET` | `mysecretkey` | JWT 签名密钥，生产环境务必改为复杂随机值。 |
-| `CORS_ORIGIN` | *(未设置)* | 允许的单一来源，设置为 `*` 表示不限制，生产环境建议改为实际域名。 |
-| `CORS_ORIGINS` | *(未设置)* | 允许访问 API 的域名列表，支持多个逗号分隔，同样支持 `*` 表示不限制。 |
+| `CORS_ORIGIN` | *(未设置)* | 允许的单一来源（向后兼容变量名），设置为 `*` 表示不限制，生产环境建议改为实际域名。 |
+| `CORS_ORIGINS` | *(未设置)* | 允许访问 API 的来源列表，支持多个逗号分隔，同样支持 `*` 表示不限制。 |
 
 > 如需自定义数据库存储路径，可修改镜像内 `/app/database` 挂载目录。
 

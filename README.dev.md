@@ -136,37 +136,39 @@ Authorization: Bearer <token>
 
 ### 菜单接口
 
-- `GET /api/menu` - 获取所有菜单
-- `POST /api/menu` - 创建菜单 (需认证)
-- `PUT /api/menu/:id` - 更新菜单 (需认证)
-- `DELETE /api/menu/:id` - 删除菜单 (需认证)
+- `GET /api/menus` - 获取所有菜单
+- `POST /api/menus` - 创建菜单 (需认证)
+- `PUT /api/menus/:id` - 更新菜单 (需认证)
+- `DELETE /api/menus/:id` - 删除菜单 (需认证)
 
 ### 卡片接口
 
-- `GET /api/card?menu_id=1` - 获取卡片（可按菜单过滤）
-- `POST /api/card` - 创建卡片 (需认证)
-- `PUT /api/card/:id` - 更新卡片 (需认证)
-- `DELETE /api/card/:id` - 删除卡片 (需认证)
+- `GET /api/cards?menu_id=1` - 获取卡片（可按菜单过滤）
+- `POST /api/cards` - 创建卡片 (需认证)
+- `PUT /api/cards/:id` - 更新卡片 (需认证)
+- `DELETE /api/cards/:id` - 删除卡片 (需认证)
 
 ### 广告接口
 
-- `GET /api/ad` - 获取广告列表
-- `POST /api/ad` - 添加广告 (需认证)
-- `PUT /api/ad/:id` - 更新广告 (需认证)
-- `DELETE /api/ad/:id` - 删除广告 (需认证)
+- `GET /api/ads` - 获取广告列表
+- `POST /api/ads` - 添加广告 (需认证)
+- `PUT /api/ads/:id` - 更新广告 (需认证)
+- `DELETE /api/ads/:id` - 删除广告 (需认证)
 
 ### 友链接口
 
-- `GET /api/friend` - 获取友链列表
-- `POST /api/friend` - 添加友链 (需认证)
-- `PUT /api/friend/:id` - 更新友链 (需认证)
-- `DELETE /api/friend/:id` - 删除友链 (需认证)
+- `GET /api/friends` - 获取友链列表
+- `POST /api/friends` - 添加友链 (需认证)
+- `PUT /api/friends/:id` - 更新友链 (需认证)
+- `DELETE /api/friends/:id` - 删除友链 (需认证)
 
 ### 用户接口
 
-- `GET /api/user` - 获取所有用户 (需认证)
-- `PUT /api/user/:id/password` - 修改密码 (需认证)
-- `DELETE /api/user/:id` - 删除用户 (需认证)
+- `GET /api/users` - 获取所有用户 (需认证)
+- `PUT /api/users/:id/password` - 修改密码 (需认证)
+- `DELETE /api/users/:id` - 删除用户 (需认证)
+
+> 说明：历史版本中的 `/api/menu`、`/api/card` 等路径仍保留别名以兼容旧客户端，但推荐更新到新的复数形式。
 
 ## 🗄️ 数据库
 

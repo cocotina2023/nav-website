@@ -34,7 +34,7 @@ const users = ref([])
 const newUser = ref({ username: '', password: '' })
 
 async function loadUsers() {
-  const res = await api.get('/user')
+  const res = await api.get('/users')
   users.value = res.data
 }
 onMounted(loadUsers)
@@ -46,14 +46,14 @@ async function addUser() {
 }
 
 async function del(id) {
-  await api.delete(`/user/${id}`)
+  await api.delete(`/users/${id}`)
   loadUsers()
 }
 
 async function resetPwd(id) {
   const pwd = prompt('请输入新密码：')
   if (!pwd) return
-  await api.put(`/user/${id}/password`, { password: pwd })
+  await api.put(`/users/${id}/password`, { password: pwd })
   alert('密码已更新')
 }
 </script>

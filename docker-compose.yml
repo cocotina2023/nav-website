@@ -2,21 +2,24 @@ version: '3'
 
 services:
   nav-website:
-    image: ghcr.io/cocotina2023/nav-website:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nav-website:latest
     container_name: nav-website
     ports:
-      - "4500:4500"                        # 主机端口:容器端口
+      - "4500:4500"
     environment:
-      - NODE_ENV=production                # 运行模式
-      - PORT=4500                          # 容器内部 Node.js 监听端口
-      - ADMIN_USERNAME=admin               # 默认管理员账号
-      - ADMIN_PASSWORD=123456              # 默认管理员密码
-      - JWT_SECRET=replace-with-strong-secret # JWT 签名密钥
-      - CORS_ORIGIN=*                      # 跨域来源，生产环境请设置为实际域名
+      NODE_ENV: production
+      PORT: 4500
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: 123456
+      JWT_SECRET: replace-with-strong-secret
+      CORS_ORIGINS: "*"
     volumes:
-      - ./database:/app/database           # 持久化 SQLite 数据库
-      - ./uploads:/app/uploads             # 持久化上传文件
-    restart: unless-stopped                # 异常退出自动重启
+      - ./database:/app/database
+      - ./uploads:/app/uploads
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4500/api/health"]
       interval: 30s

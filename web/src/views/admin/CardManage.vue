@@ -29,18 +29,18 @@ const menus = ref([])
 const newMenu = ref({ name: '', icon: '', order_index: 0 })
 
 async function loadMenus() {
-  const res = await api.get('/menu')
+  const res = await api.get('/menus')
   menus.value = res.data
 }
 onMounted(loadMenus)
 
 async function addMenu() {
-  await api.post('/menu', newMenu.value)
+  await api.post('/menus', newMenu.value)
   newMenu.value = { name: '', icon: '', order_index: 0 }
   loadMenus()
 }
 async function del(id) {
-  await api.delete(`/menu/${id}`)
+  await api.delete(`/menus/${id}`)
   loadMenus()
 }
 </script>

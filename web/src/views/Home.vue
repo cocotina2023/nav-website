@@ -15,13 +15,13 @@ const menus = ref([])
 const cards = ref([])
 
 onMounted(async () => {
-  const res = await api.get('/menu')
+  const res = await api.get('/menus')
   menus.value = res.data
   if (menus.value.length) loadCards(menus.value[0].id)
 })
 
 async function loadCards(menuId) {
-  const res = await api.get('/card', { params: { menu_id: menuId } })
+  const res = await api.get('/cards', { params: { menu_id: menuId } })
   cards.value = res.data
 }
 </script>
