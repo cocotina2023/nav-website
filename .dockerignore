@@ -1,0 +1,23 @@
+# Dependencies
+node_modules
+web/node_modules
+
+# Build outputs
+web/dist
+dist
+build
+
+# Local data that should not be baked into the image
+database/*.db
+database/*.db-*
+uploads/*
+!uploads/default-favicon.png
+
+# Logs
+yarn-debug.log*
+npm-debug.log*
+
+# Misc
+.git
+.gitignore
+.DS_Store

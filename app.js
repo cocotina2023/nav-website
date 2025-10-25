@@ -2,6 +2,9 @@
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { PORT } from './config.js';
 import { db } from './db.js';
 
@@ -14,6 +17,11 @@ import friendRoutes from './routes/friend.js';
 import userRoutes from './routes/user.js';
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const isProduction = process.env.NODE_ENV === 'production';
+const staticDir = path.join(__dirname, 'web', 'dist');
+const uploadsDir = path.join(__dirname, 'uploads');
 
 const rawCorsOrigins = process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN ?? null;
 const allowedOrigins = rawCorsOrigins
@@ -38,37 +46,116 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // 静态文件 (比如上传目录)
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(uploadsDir));
 
 // 前端静态文件（生产环境）
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static('web/dist'));
+if (isProduction) {
+  if (fs.existsSync(staticDir)) {
+    console.log('✅ 正在托管前端静态资源:', staticDir);
+    app.use(express.static(staticDir));
+  } else {
+    console.warn('⚠️ 未找到前端构建产物，SPA 路由可能无法正常工作:', staticDir);
+  }
 }
 
-// 路由注册
+const serveSpa = (req, res, next) => {
+  const indexPath = path.join(staticDir, 'index.html');
+  res.sendFile(indexPath, (err) => {
+    if (!err) {
+      return;
+    }
+
+    if (err.code === 'ENOENT') {
+      console.error('❌ 未找到 SPA 构建入口文件:', indexPath);
+      if (!res.headersSent) {
+        res.status(500).json({ error: '前端构建资源缺失，请先执行构建。' });
+      }
+      return;
+    }
+
+    next(err);
+  });
+};
+
+// 健康检查
 app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
+  db.get('SELECT 1 AS result', (err) => {
+    const healthy = !err;
+    const payload = {
+      status: healthy ? 'ok' : 'error',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      database: healthy ? 'connected' : 'disconnected',
+    };
+
+    if (err) {
+      console.error('❌ 数据库健康检查失败:', err.message);
+      payload.error = err.message;
+      res.status(500).json(payload);
+      return;
+    }
+
+    res.json(payload);
   });
 });
-app.use('/api/auth', authRoutes);
-app.use('/api/menu', menuRoutes);
-app.use('/api/card', cardRoutes);
-app.use('/api/ad', adRoutes);
-app.use('/api/friend', friendRoutes);
-app.use('/api/user', userRoutes);
 
-// 测试接口
-app.get('/', (req, res) => {
+// 路由注册
+app.use('/api/auth', authRoutes);
+app.use(['/api/menus', '/api/menu'], menuRoutes);
+app.use(['/api/cards', '/api/card'], cardRoutes);
+app.use(['/api/ads', '/api/ad'], adRoutes);
+app.use(['/api/friends', '/api/friend'], friendRoutes);
+app.use(['/api/users', '/api/user'], userRoutes);
+
+// 根路径 - 在生产环境下回退到 SPA，在开发环境返回简单信息
+app.get('/', (req, res, next) => {
+  if (isProduction) {
+    serveSpa(req, res, next);
+    return;
+  }
+
   res.json({ message: 'Nav Website Backend API Running 🚀' });
 });
 
-// 404 处理
+// SPA fallback（必须放在所有路由之后）
+app.get('*', (req, res, next) => {
+  if (
+    req.method !== 'GET' ||
+    req.path.startsWith('/api') ||
+    req.path.startsWith('/uploads')
+  ) {
+    next();
+    return;
+  }
+
+  if (!isProduction) {
+    next();
+    return;
+  }
+
+  const accept = req.headers.accept || '';
+  if (accept && !accept.includes('text/html') && !accept.includes('*/*')) {
+    next();
+    return;
+  }
+
+  serveSpa(req, res, next);
+});
+
+// 404 处理（主要针对 API）
 app.use((req, res) => {
-  console.warn(`[404] ${req.method} ${req.originalUrl}`);
-  res.status(404).json({ error: '接口不存在' });
+  if (req.path.startsWith('/api')) {
+    console.warn(`[404] ${req.method} ${req.originalUrl}`);
+    res.status(404).json({ error: '接口不存在' });
+    return;
+  }
+
+  if (req.path.startsWith('/uploads')) {
+    res.status(404).send('Not Found');
+    return;
+  }
+
+  res.status(404).json({ error: 'Not Found' });
 });
 
 // 全局错误处理

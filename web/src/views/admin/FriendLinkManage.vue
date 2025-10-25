@@ -33,19 +33,19 @@ const friends = ref([])
 const newFriend = ref({ name: '', url: '', logo: '' })
 
 async function loadFriends() {
-  const res = await api.get('/friend')
+  const res = await api.get('/friends')
   friends.value = res.data
 }
 onMounted(loadFriends)
 
 async function addFriend() {
-  await api.post('/friend', newFriend.value)
+  await api.post('/friends', newFriend.value)
   newFriend.value = { name: '', url: '', logo: '' }
   loadFriends()
 }
 
 async function del(id) {
-  await api.delete(`/friend/${id}`)
+  await api.delete(`/friends/${id}`)
   loadFriends()
 }
 </script>
